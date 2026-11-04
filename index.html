@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WIIISH - Keep your voice close</title>
+  <title>WIIISH - Keep Your Voice Close</title>
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Tailwind CSS CDN for quick styling -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#FFFDF9] text-slate-800 font-sans min-h-screen">
@@ -14,11 +15,21 @@
   <!-- React & ReactDOM CDNs -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Babel for JSX transformation -->
+  <!-- Babel Compiler -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Main App Script -->
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('WIIISH Service Worker Registered:', reg.scope))
+          .catch(err => console.log('Service Worker Failed:', err));
+      });
+    }
+  </script>
+
+  <!-- Application Code -->
   <script type="text/babel" src="app.jsx"></script>
 </body>
 </html>
