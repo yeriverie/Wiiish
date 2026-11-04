@@ -11,7 +11,6 @@ function WiiishApp() {
   const [userEmail, setUserEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("Khushi");
-  const [avatarUrl, setAvatarUrl] = useState("");
 
   const [activeTab, setActiveTab] = useState("pulse");
 
@@ -24,8 +23,6 @@ function WiiishApp() {
   const [checkInFrequency, setCheckInFrequency] = useState(30);
   const [daysRemaining, setDaysRemaining] = useState(30);
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
   const [echoTitle, setEchoTitle] = useState("");
   const [echoLetter, setEchoLetter] = useState("");
   const [selectedRecipientId, setSelectedRecipientId] = useState("");
@@ -40,43 +37,16 @@ function WiiishApp() {
         setUser(session.user);
         setUserEmail(session.user.email);
         setIsAuthenticated(true);
-        loadUserData(session.user.id);
       }
     });
   }, []);
-
-  const loadUserData = async (userId) => {
-    if (!supabaseClient) return;
-    const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-    if (profile) {
-      setDisplayName(profile.display_name || "Khushi");
-      setCheckInFrequency(profile.check_in_frequency_days || 30);
-    }
-  };
-    const handleLogin = async (e) => {
+    const handleLogin = (e) => {
     e.preventDefault();
-    if (!userEmail || !password) return;
-
-    if (!supabaseClient || SUPABASE_URL.includes("YOUR_")) {
-      // Fallback Demo Login if Supabase isn't configured yet
-      setIsAuthenticated(true);
-      return;
-    }
-
-    let { error } = await supabaseClient.auth.signInWithPassword({ email: userEmail, password: password });
-    if (error) {
-      let { error: signUpError } = await supabaseClient.auth.signUp({ email: userEmail, password: password });
-      if (signUpError) {
-        alert("Auth Note: " + signUpError.message + "\n(Tip: You can also use the Demo Login button below!)");
-        return;
-      }
-    }
     setIsAuthenticated(true);
   };
 
   const handleDemoLogin = () => {
     setIsAuthenticated(true);
-    setDisplayName("Khushi");
     setUserEmail("khushi@pdace.ac.in");
   };
 
@@ -119,11 +89,17 @@ function WiiishApp() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#FFFDF9] flex flex-col items-center justify-center p-6 text-slate-800">
-        <div className="w-full max-w-md bg-white border border-pink-100 rounded-3xl p-8 shadow-sm text-center space-y-6">
-          {/* Fixed Logo */}
-          <div className="flex flex-col items-center justify-center">
-            <svg viewBox="0 0 300 80" className="w-48 h-auto">
-              <text x="10" y="62" fontFamily="Plus Jakarta Sans, sans-serif" fontWeight="800" fontSize="56" fill="#70B5F9">WIIISH</text>
+        <div className="w-full max-w-md bg-white border border-pink-100 rounded-3xl p-8 shadow-sm text-center">
+          
+          {/* Logo SVG */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <svg viewBox="0 0 400 120" className="w-56 h-auto">
+              <path d="M 30,85 Q 35,40 45,35 Q 55,30 65,75 Q 75,85 85,35 Q 95,35 105,85 Q 115,95 125,80" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M 140,40 L 140,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
+              <path d="M 175,40 L 175,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
+              <path d="M 210,40 L 210,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
+              <path d="M 260,80 Q 235,85 240,65 Q 245,50 265,45 Q 275,40 250,32" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
+              <path d="M 285,95 L 285,35 Q 285,30 300,35 Q 315,50 300,70 Q 285,60 305,45" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
             </svg>
             <p className="text-xs text-pink-400 font-semibold mt-1">Keep your voice close to your favorite people ✨</p>
           </div>
@@ -161,7 +137,7 @@ function WiiishApp() {
             </button>
           </form>
 
-          <div className="relative flex py-2 items-center">
+          <div className="relative flex py-4 items-center">
             <div className="flex-grow border-t border-slate-100"></div>
             <span className="flex-shrink mx-4 text-xs text-slate-400 uppercase">or</span>
             <div className="flex-grow border-t border-slate-100"></div>
@@ -171,18 +147,23 @@ function WiiishApp() {
             onClick={handleDemoLogin}
             className="w-full py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-sm font-semibold rounded-xl transition"
           >
-            ✨ Quick Demo Login (Instant Access)
+            ✨ Quick Demo Login
           </button>
         </div>
       </div>
     );
-}
-    return (
+  }
+  return (
     <div className="min-h-screen bg-[#FFFDF9] text-slate-800 font-sans pb-16">
       <header className="bg-white border-b border-pink-100 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <svg viewBox="0 0 300 80" className="w-24 h-auto">
-            <text x="5" y="58" fontFamily="Plus Jakarta Sans, sans-serif" fontWeight="800" fontSize="50" fill="#70B5F9">WIIISH</text>
+          <svg viewBox="0 0 400 120" className="w-28 h-auto">
+            <path d="M 30,85 Q 35,40 45,35 Q 55,30 65,75 Q 75,85 85,35 Q 95,35 105,85 Q 115,95 125,80" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M 140,40 L 140,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
+            <path d="M 175,40 L 175,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
+            <path d="M 210,40 L 210,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
+            <path d="M 260,80 Q 235,85 240,65 Q 245,50 265,45 Q 275,40 250,32" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
+            <path d="M 285,95 L 285,35 Q 285,30 300,35 Q 315,50 300,70 Q 285,60 305,45" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
           </svg>
 
           <button 
@@ -218,7 +199,7 @@ function WiiishApp() {
           <div className="bg-gradient-to-br from-pink-50 via-sky-50 to-yellow-50 rounded-3xl p-6 border border-pink-100 text-center space-y-4">
             <h2 className="text-2xl font-bold text-slate-800">Your Pulse Status</h2>
             <p className="text-sm text-slate-600 max-w-md mx-auto">
-              Check in periodically to confirm you are safe. If you miss your check-in, your voice echoes will deliver.
+              Check in periodically to confirm you are safe.
             </p>
 
             <div className="py-4 flex flex-col items-center justify-center">
@@ -286,7 +267,7 @@ function WiiishApp() {
             <h2 className="text-xl font-bold text-slate-800">Record Voice Echo</h2>
             <input
               type="text"
-              placeholder="Echo Title (e.g. For my birthday)"
+              placeholder="Echo Title"
               value={echoTitle}
               onChange={(e) => setEchoTitle(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
@@ -336,3 +317,4 @@ function WiiishApp() {
 }
 
 ReactDOM.render(<WiiishApp />, document.getElementById("root"));
+                
