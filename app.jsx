@@ -17,8 +17,9 @@ function WiiishApp() {
   const [newPersonName, setNewPersonName] = useState("");
   const [newPersonEmail, setNewPersonEmail] = useState("");
 
-  const [daysRemaining, setDaysRemaining] = useState(24);
-  const [checkInFrequency, setCheckInFrequency] = useState(30);
+  // Configurable Check-in Frequency (Defaulted to 1 Day for testing)
+  const [checkInFrequency, setCheckInFrequency] = useState(1);
+  const [daysRemaining, setDaysRemaining] = useState(1);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -58,9 +59,15 @@ function WiiishApp() {
     }
   };
 
+  const handleFrequencyChange = (e) => {
+    const newFreq = parseInt(e.target.value, 10);
+    setCheckInFrequency(newFreq);
+    setDaysRemaining(newFreq);
+  };
+
   const handlePulseCheckIn = () => {
     setDaysRemaining(checkInFrequency);
-    alert("Pulse check-in confirmed! Your echoes remain safely locked. ✨");
+    alert(`Pulse check-in confirmed! Your check-in timer is reset to ${checkInFrequency} day(s). ✨`);
   };
 
   const handleAddPerson = (e) => {
@@ -271,7 +278,23 @@ function WiiishApp() {
                 Check in periodically to confirm you are safe. If you miss your check-in, your saved voice echoes will gently deliver.
               </p>
 
-              <div className="py-6 flex flex-col items-center justify-center">
+              {/* Check-In Frequency Dropdown Selector */}
+              <div className="max-w-xs mx-auto text-left bg-white/70 p-3 rounded-2xl border border-pink-100">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Check-in Interval</label>
+                <select
+                  value={checkInFrequency}
+                  onChange={handleFrequencyChange}
+                  className="w-full px-3 py-2 bg-white border border-pink-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                >
+                  <option value={1}>1 Day (Testing Mode ⚡)</option>
+                  <option value={7}>7 Days (Weekly)</option>
+                  <option value={14}>14 Days (Bi-weekly)</option>
+                  <option value={30}>30 Days (Monthly)</option>
+                  <option value={90}>90 Days (Quarterly)</option>
+                </select>
+              </div>
+
+              <div className="py-4 flex flex-col items-center justify-center">
                 <div className="relative w-44 h-44 flex items-center justify-center rounded-full border-4 border-pink-200 bg-white shadow-inner">
                   <div className="text-center">
                     <span className="text-4xl font-extrabold text-pink-500">{daysRemaining}</span>
@@ -373,8 +396,8 @@ function WiiishApp() {
                 onChange={(e) => setDeliverySchedule(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
               >
-                <option value="monthly">Every Month</option>
-                <option value="yearly">Every Year</option>
+                <option value="monthly">Every Month (Same day/time)</option>
+                <option value="yearly">Every Year (Same day/time)</option>
                 <option value="post_passing">One-Time After Passing</option>
               </select>
 
@@ -400,24 +423,4 @@ function WiiishApp() {
               <p className="text-center text-sm text-slate-400 py-12">No echoes recorded yet.</p>
             ) : (
               savedEchoes.map((echo) => (
-                <div key={echo.id} className="bg-white p-5 rounded-2xl border border-slate-100 space-y-2">
-                  <h3 className="text-base font-bold text-slate-800">{echo.title}</h3>
-                  <p className="text-xs text-slate-500">For: {echo.recipientName}</p>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {activeTab === "preview" && (
-          <div className="bg-gradient-to-br from-pink-50 via-sky-50 to-white p-6 rounded-3xl border border-pink-100 text-center space-y-4">
-            <h3 className="text-xl font-bold text-slate-800">A Message From {displayName || "Khushi"} ✨</h3>
-            <p className="text-xs text-slate-500">This is how your loved ones will experience your message.</p>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-ReactDOM.render(<WiiishApp />, document.getElementById("root"));
+                <div key={echo.id} className="bg-white p-5 rounded-2xl border borde
