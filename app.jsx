@@ -1,8 +1,5 @@
 const { useState, useEffect } = React;
 
-// ----------------------------------------------------
-// REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-// ----------------------------------------------------
 const SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_ID.supabase.co";
 const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
@@ -13,13 +10,14 @@ function WiiishApp() {
   const [user, setUser] = useState(null);
   const [userEmail, setUserEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [displayName, setDisplayName] = useState("Khushi");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const [activeTab, setActiveTab] = useState("pulse");
 
-  const [favoritePeople, setFavoritePeople] = useState([]);
+  const [favoritePeople, setFavoritePeople] = useState([
+    { id: "1", name: "Amma", email: "amma@example.com" }
+  ]);
   const [newPersonName, setNewPersonName] = useState("");
   const [newPersonEmail, setNewPersonEmail] = useState("");
 
@@ -35,10 +33,8 @@ function WiiishApp() {
 
   const [savedEchoes, setSavedEchoes] = useState([]);
 
-  // Check Supabase Auth Session on Load
   useEffect(() => {
     if (!supabaseClient) return;
-    
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
@@ -47,176 +43,89 @@ function WiiishApp() {
         loadUserData(session.user.id);
       }
     });
-
-    const { data: authListener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        setUserEmail(session.user.email);
-        setIsAuthenticated(true);
-        loadUserData(session.user.id);
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    });
-
-    return () => authListener?.subscription?.unsubscribe();
   }, []);
 
-  // Fetch persistent user data from Supabase DB
   const loadUserData = async (userId) => {
     if (!supabaseClient) return;
-
     const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
     if (profile) {
-      setDisplayName(profile.display_name || "");
-      setAvatarUrl(profile.avatar_url || "");
+      setDisplayName(profile.display_name || "Khushi");
       setCheckInFrequency(profile.check_in_frequency_days || 30);
-      
-      if (profile.last_check_in) {
-        const lastCheck = new Date(profile.last_check_in);
-        const nextCheck = new Date(lastCheck.getTime() + (profile.check_in_frequency_days * 24 * 60 * 60 * 1000));
-        const diffDays = Math.ceil((nextCheck - new Date()) / (1000 * 60 * 60 * 24));
-        setDaysRemaining(diffDays > 0 ? diffDays : 0);
-      }
+    }
+  };
+    const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!userEmail || !password) return;
+
+    if (!supabaseClient || SUPABASE_URL.includes("YOUR_")) {
+      // Fallback Demo Login if Supabase isn't configured yet
+      setIsAuthenticated(true);
+      return;
     }
 
-    const { data: recipients } = await supabaseClient.from('recipients').select('*').eq('user_id', userId);
-    if (recipients) setFavoritePeople(recipients);
-
-    const { data: echoes } = await supabaseClient.from('echoes').select('*').eq('user_id', userId);
-    if (echoes) setSavedEchoes(echoes);
-  };
-    // Auth Submit (Login / SignUp)
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!userEmail || !password || !supabaseClient) return;
-
-    let { error } = await supabaseClient.auth.signInWithPassword({
-      email: userEmail,
-      password: password
-    });
-
-    if (error && error.message.includes("Invalid login credentials")) {
-      const { error: signUpError } = await supabaseClient.auth.signUp({
-        email: userEmail,
-        password: password
-      });
+    let { error } = await supabaseClient.auth.signInWithPassword({ email: userEmail, password: password });
+    if (error) {
+      let { error: signUpError } = await supabaseClient.auth.signUp({ email: userEmail, password: password });
       if (signUpError) {
-        alert("Authentication Error: " + signUpError.message);
+        alert("Auth Note: " + signUpError.message + "\n(Tip: You can also use the Demo Login button below!)");
         return;
       }
-      alert("Account created successfully! Welcome to WIIISH ✨");
-    } else if (error) {
-      alert("Login Error: " + error.message);
     }
+    setIsAuthenticated(true);
   };
 
-  // Pulse Check-In (Updates Supabase DBMS)
-  const handlePulseCheckIn = async () => {
+  const handleDemoLogin = () => {
+    setIsAuthenticated(true);
+    setDisplayName("Khushi");
+    setUserEmail("khushi@pdace.ac.in");
+  };
+
+  const handlePulseCheckIn = () => {
     setDaysRemaining(checkInFrequency);
-    if (supabaseClient && user) {
-      await supabaseClient.from('profiles').upsert({
-        id: user.id,
-        email: user.email,
-        display_name: displayName,
-        check_in_frequency_days: checkInFrequency,
-        last_check_in: new Date().toISOString()
-      });
-    }
     alert(`Pulse confirmed! Check-in timer reset to ${checkInFrequency} day(s). ✨`);
   };
 
-  // Save Recipient to DBMS
-  const handleAddPerson = async (e) => {
+  const handleAddPerson = (e) => {
     e.preventDefault();
     if (!newPersonName || !newPersonEmail) return;
-
-    const newPerson = {
-      id: Date.now().toString(),
-      name: newPersonName,
-      email: newPersonEmail
-    };
-
-    if (supabaseClient && user) {
-      const { data } = await supabaseClient.from('recipients').insert([{
-        user_id: user.id,
-        name: newPersonName,
-        email: newPersonEmail
-      }]).select().single();
-
-      if (data) newPerson.id = data.id;
-    }
-
-    setFavoritePeople([...favoritePeople, newPerson]);
+    setFavoritePeople([...favoritePeople, { id: Date.now().toString(), name: newPersonName, email: newPersonEmail }]);
     setNewPersonName("");
     setNewPersonEmail("");
   };
 
-  // Delete Recipient from DBMS
-  const handleDeletePerson = async (id) => {
-    if (supabaseClient && user) {
-      await supabaseClient.from('recipients').delete().eq('id', id);
-    }
+  const handleDeletePerson = (id) => {
     setFavoritePeople(favoritePeople.filter((p) => p.id !== id));
   };
 
-  // Save Echo to DBMS
-  const handleSaveEcho = async () => {
+  const handleSaveEcho = () => {
     if (!echoTitle || !selectedRecipientId) {
       alert("Please provide a title and select a recipient!");
       return;
     }
     const recipient = favoritePeople.find((p) => p.id === selectedRecipientId);
-    
-    const newEcho = {
+    setSavedEchoes([{
       id: Date.now().toString(),
       title: echoTitle,
       recipientName: recipient ? recipient.name : "Loved One",
       recipientEmail: recipient ? recipient.email : "",
       letter: echoLetter,
-      deliverySchedule,
-      duration: recordingTime > 0 ? `${recordingTime}s` : "0s",
-      createdAt: new Date().toLocaleDateString()
-    };
-
-    if (supabaseClient && user) {
-      await supabaseClient.from('echoes').insert([{
-        user_id: user.id,
-        recipient_id: selectedRecipientId,
-        title: echoTitle,
-        letter: echoLetter,
-        delivery_schedule: deliverySchedule
-      }]);
-    }
-
-    setSavedEchoes([newEcho, ...savedEchoes]);
+      deliverySchedule
+    }, ...savedEchoes]);
     setEchoTitle("");
     setEchoLetter("");
-    setRecordingTime(0);
     setActiveTab("vault");
-  };
-
-  const handleLogout = async () => {
-    if (supabaseClient) await supabaseClient.auth.signOut();
-    setIsAuthenticated(false);
-    setUser(null);
   };
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#FFFDF9] flex flex-col items-center justify-center p-6 text-slate-800">
-        <div className="w-full max-w-md bg-white border border-pink-100 rounded-3xl p-8 shadow-sm text-center">
-          <div className="flex flex-col items-center justify-center mb-6">
-            <svg viewBox="0 0 400 120" className="w-56 h-auto">
-              <path d="M 30,35 Q 35,80 45,85 Q 55,90 65,45 Q 75,35 85,85 Q 95,85 105,35 Q 115,25 125,40" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M 140,40 L 140,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
-              <path d="M 175,40 L 175,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
-              <path d="M 210,40 L 210,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
-              <path d="M 260,40 Q 235,35 240,55 Q 245,70 265,75 Q 275,80 250,88" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
-              <path d="M 285,25 L 285,85 Q 285,90 300,85 Q 315,70 300,50 Q 285,60 305,75" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
+        <div className="w-full max-w-md bg-white border border-pink-100 rounded-3xl p-8 shadow-sm text-center space-y-6">
+          {/* Fixed Logo */}
+          <div className="flex flex-col items-center justify-center">
+            <svg viewBox="0 0 300 80" className="w-48 h-auto">
+              <text x="10" y="62" fontFamily="Plus Jakarta Sans, sans-serif" fontWeight="800" fontSize="56" fill="#70B5F9">WIIISH</text>
             </svg>
-            <p className="text-sm text-pink-400 font-medium mt-1">Keep your voice close to your favorite people ✨</p>
+            <p className="text-xs text-pink-400 font-semibold mt-1">Keep your voice close to your favorite people ✨</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4 text-left">
@@ -246,42 +155,49 @@ function WiiishApp() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-pink-400 hover:bg-pink-500 text-white font-medium rounded-xl shadow-sm transition flex items-center justify-center gap-2"
+              className="w-full py-3 bg-pink-400 hover:bg-pink-500 text-white font-medium rounded-xl shadow-sm transition"
             >
               Sign In / Create Account
             </button>
           </form>
+
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-slate-100"></div>
+            <span className="flex-shrink mx-4 text-xs text-slate-400 uppercase">or</span>
+            <div className="flex-grow border-t border-slate-100"></div>
+          </div>
+
+          <button
+            onClick={handleDemoLogin}
+            className="w-full py-2.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-sm font-semibold rounded-xl transition"
+          >
+            ✨ Quick Demo Login (Instant Access)
+          </button>
         </div>
       </div>
     );
-  }
+}
     return (
     <div className="min-h-screen bg-[#FFFDF9] text-slate-800 font-sans pb-16">
       <header className="bg-white border-b border-pink-100 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <svg viewBox="0 0 400 120" className="w-28 h-auto">
-            <path d="M 30,35 Q 35,80 45,85 Q 55,90 65,45 Q 75,35 85,85 Q 95,85 105,35 Q 115,25 125,40" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M 140,40 L 140,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
-            <path d="M 175,40 L 175,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
-            <path d="M 210,40 L 210,85" fill="none" stroke="#70B5F9" strokeWidth="18" strokeLinecap="round"/>
-            <path d="M 260,40 Q 235,35 240,55 Q 245,70 265,75 Q 275,80 250,88" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
-            <path d="M 285,25 L 285,85 Q 285,90 300,85 Q 315,70 300,50 Q 285,60 305,75" fill="none" stroke="#70B5F9" strokeWidth="16" strokeLinecap="round"/>
+          <svg viewBox="0 0 300 80" className="w-24 h-auto">
+            <text x="5" y="58" fontFamily="Plus Jakarta Sans, sans-serif" fontWeight="800" fontSize="50" fill="#70B5F9">WIIISH</text>
           </svg>
 
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleLogout}
-              className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1"
-            >
-              Log Out
-            </button>
-          </div>
+          <button 
+            onClick={() => setIsAuthenticated(false)}
+            className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1"
+          >
+            Log Out
+          </button>
         </div>
 
         <div className="max-w-4xl mx-auto px-4 flex justify-around border-t border-slate-100 text-xs font-medium text-slate-500">
           {[
             { id: "pulse", label: "Pulse Ring" },
             { id: "people", label: "My People" },
+            { id: "studio", label: "Record Voice" },
             { id: "vault", label: "Echo Vault" }
           ].map((tab) => (
             <button
@@ -299,29 +215,27 @@ function WiiishApp() {
 
       <main className="max-w-2xl mx-auto px-4 mt-8">
         {activeTab === "pulse" && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-pink-50 via-sky-50 to-yellow-50 rounded-3xl p-6 border border-pink-100 text-center space-y-4">
-              <h2 className="text-2xl font-bold text-slate-800">Your Pulse Status</h2>
-              <p className="text-sm text-slate-600 max-w-md mx-auto">
-                Check in periodically to confirm you are safe.
-              </p>
+          <div className="bg-gradient-to-br from-pink-50 via-sky-50 to-yellow-50 rounded-3xl p-6 border border-pink-100 text-center space-y-4">
+            <h2 className="text-2xl font-bold text-slate-800">Your Pulse Status</h2>
+            <p className="text-sm text-slate-600 max-w-md mx-auto">
+              Check in periodically to confirm you are safe. If you miss your check-in, your voice echoes will deliver.
+            </p>
 
-              <div className="py-4 flex flex-col items-center justify-center">
-                <div className="relative w-44 h-44 flex items-center justify-center rounded-full border-4 border-pink-200 bg-white shadow-inner">
-                  <div className="text-center">
-                    <span className="text-4xl font-extrabold text-pink-500">{daysRemaining}</span>
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-1">Days Remaining</p>
-                  </div>
+            <div className="py-4 flex flex-col items-center justify-center">
+              <div className="relative w-44 h-44 flex items-center justify-center rounded-full border-4 border-pink-200 bg-white shadow-inner">
+                <div className="text-center">
+                  <span className="text-4xl font-extrabold text-pink-500">{daysRemaining}</span>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-1">Days Remaining</p>
                 </div>
               </div>
-
-              <button
-                onClick={handlePulseCheckIn}
-                className="px-6 py-3 bg-pink-400 hover:bg-pink-500 text-white font-semibold rounded-full shadow-md transition"
-              >
-                I'm Safe & Alive ✨
-              </button>
             </div>
+
+            <button
+              onClick={handlePulseCheckIn}
+              className="px-6 py-3 bg-pink-400 hover:bg-pink-500 text-white font-semibold rounded-full shadow-md transition"
+            >
+              I'm Safe & Alive ✨
+            </button>
           </div>
         )}
 
@@ -367,6 +281,39 @@ function WiiishApp() {
           </div>
         )}
 
+        {activeTab === "studio" && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 space-y-5">
+            <h2 className="text-xl font-bold text-slate-800">Record Voice Echo</h2>
+            <input
+              type="text"
+              placeholder="Echo Title (e.g. For my birthday)"
+              value={echoTitle}
+              onChange={(e) => setEchoTitle(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+            />
+            <select
+              value={selectedRecipientId}
+              onChange={(e) => setSelectedRecipientId(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+            >
+              <option value="">-- Choose recipient --</option>
+              {favoritePeople.map((p) => (
+                <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
+              ))}
+            </select>
+            <textarea
+              rows={3}
+              placeholder="Accompanying letter..."
+              value={echoLetter}
+              onChange={(e) => setEchoLetter(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+            />
+            <button onClick={handleSaveEcho} className="w-full py-3 bg-pink-400 text-white font-semibold rounded-xl hover:bg-pink-500 transition">
+              Save Echo to Vault ✨
+            </button>
+          </div>
+        )}
+
         {activeTab === "vault" && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">My Saved Echoes</h2>
@@ -376,6 +323,7 @@ function WiiishApp() {
               savedEchoes.map((echo) => (
                 <div key={echo.id} className="bg-white p-5 rounded-2xl border border-slate-100 space-y-2">
                   <h3 className="text-base font-bold text-slate-800">{echo.title}</h3>
+                  <p className="text-xs text-slate-500">For: {echo.recipientName} ({echo.recipientEmail})</p>
                   {echo.letter && <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-lg">"{echo.letter}"</p>}
                 </div>
               ))
@@ -388,5 +336,3 @@ function WiiishApp() {
 }
 
 ReactDOM.render(<WiiishApp />, document.getElementById("root"));
-
-
